@@ -55,7 +55,7 @@ class VisiCalc:
         self.df = self.fy[1]-self.fy[0]
         self.fmax = self.fy.max()
         
-    def visibility (self,u,v):
+    def visibility (self,u,v, return_indices = False):
         """ u, v are in L/lambda and can be arrays
            returns complex viibility in the K units
         """
@@ -83,12 +83,15 @@ class VisiCalc:
         ## first weights
         uw = (u-self.fx[il])/self.df
         vw = (v-self.fy[jl])/self.df
+        #print ('Here:',il,jl)
         assert(np.all(uw>=0)&np.all(uw<1)&np.all(vw>=0)&np.all(vw<1))
         res = ((1-uw)*(1-vw)*self.fftmap[il,jl]+
                uw*(1-vw)*self.fftmap[ih,jl]+
                (1-uw)*vw*self.fftmap[il,jh]+
                uw*vw*self.fftmap[ih,jh])
         res[conjugate] = np.conj(res[conjugate])
+        if return_indices:
+            return res, il, jl
         return res
 
 """ Use a code like this to make some plots to convince yourself that the above
