@@ -59,12 +59,7 @@ class VisiCalc:
         self.df = self.fy[1] - self.fy[0]
         self.fmax = self.fy.max()
 
-    def visibility(
-        self,
-        u,
-        v,
-        return_indices=False,
-            linear_interpolation=False):
+    def visibility(self, u,v, interpolation = 'lasz', opts={}):
         """ u, v are in L/lambda and can be arrays
            returns complex viibility in the K units
         """
@@ -91,7 +86,7 @@ class VisiCalc:
         il = (u / self.df).astype(int)
         jl = (v / self.df).astype(int)
         il[u < 0] += self.N - 1
-        if (linear_interpolation):
+        if (interpolation == 'lin'):
             jh = jl + 1
             ih = (il + 1) % self.N
             # we will now do a two-d linear interpolation.
@@ -111,24 +106,31 @@ class VisiCalc:
                    uw * (1 - vw) * self.fftmap[ih, jl] +
                    (1 - uw) * vw * self.fftmap[il, jh] +
                    uw * vw * self.fftmap[ih, jh])
-        else:
+        elif interpolation == 'lasz':
+            la = 2
+            if 'a' in opts:
+                la = opts['a']
             # let's do Lanzos 2D interpolation, we need two points at each end
             res = np.zeros(len(u), np.complex)
             sumk = np.zeros(len(u), np.complex)
             uw = (u - self.fx[il]) / self.df
             vw = (v - self.fy[jl]) / self.df
 
-            for ii in np.arange(-1, +3):
+            lowi,highi = 0-int(la)+1, 0+int(la)+1
+
+            def kernf(x,a):
+                toret = np.sin(np.pi * x) * np.sin(np.pi * x / a)
+                toret [x!=0] /= (np.pi**2 * x[x!=0]**2)
+                toret [x==0] = 1.0
+                return toret
+            
+            for ii in np.arange(lowi,highi):
                 xi = ii - uw
-                kernx = 2 * np.sin(np.pi * xi) * np.sin(np.pi *
-                                                        xi / 2) / (np.pi**2 * xi**2 + 1e-200)
-                kernx[xi == 0] = 1.0
+                kernx = kernf(xi,la)
                 xndx = (il + ii) % self.N
-                for jj in np.arange(-1, +3):
+                for jj in np.arange(lowi, highi):
                     xj = jj - vw
-                    kerny = 2 * np.sin(np.pi * xj) * np.sin(np.pi *
-                                                            xj / 2) / (np.pi**2 * xj**2 + 1e-200)
-                    kerny[xj == 0] = 1.0
+                    kerny = kernf(xj,la)
                     # now we need to pick out where we transit the complex
                     # plain
                     jndx = (jl + jj)
@@ -139,7 +141,12 @@ class VisiCalc:
                     res += kernx * kerny * data
                     sumk += kernx * kerny
             res /= sumk
+        else:
+            print ("Bad interpolation")
+            raise NotImplemented 
+                    
         res[conjugate] = np.conj(res[conjugate])
-        if return_indices:
-            return res, il, jl
+        if 'return_indices' in opts:
+            if opts['return_indices']:
+                return res, il, jl
         return res

@@ -53,7 +53,7 @@ class TelSim:
         self.u_m = np.array(u_m)  # u in meters
         self.v_m = np.array(v_m)
 
-    def get_visibilities(self, sb, pad=2, uv_m=None, verbose=1):
+    def get_visibilities(self, sb, pad=2, uv_m=None, vopts={}, verbose=1):
         """ Gets visibilities given a simulation box
 
         Parameters
@@ -63,9 +63,11 @@ class TelSim:
         pad : float, optional
             How much to pad the 2D planes before FFTing. 2 is desirable to
             avoid wraparound issue (note that we broke translation symmetry by beam)
-        uv_m: tuple uf numpy arrays, optional
+        uv_m: tuple of numpy arrays, optional
            Tuple (u_m,v_m) describing baselines of interest. If not specified
            we use all uniqute baselines as given by _get_baselines()
+        vopts: dic, optional
+           Options to pass to the VisiCalc visibility() function
         verbose: int, optional
            Babble, babble...
         """
@@ -88,6 +90,8 @@ class TelSim:
             u_m = np.atleast_1d(uv_m[0])
             v_m = np.atleast_1d(uv_m[1])
 
+        if 'interpolation' not in vopts:
+            vopts['interpolation']='lasz'
         for i, (lam, dpix, beam) in enumerate(
                 zip(sb.lams, sb.Dpix_rad, sigbeam)):
             box = sb.box[:, :, i]
@@ -102,7 +106,8 @@ class TelSim:
             else:
                 cbox = box
             V = vc.VisiCalc(cbox, dpix, vc.SimplestGaussBeam(beam))
-            R, il, jl = V.visibility(u_m / lam, v_m / lam, return_indices=True)
+            R = V.visibility(u_m / lam, v_m / lam,
+                interpolation = vopts['interpolation'], opts=vopts)
             if verbose > 1:
                 if i == 0 or i == sb.Nz - 1:
                     print(
