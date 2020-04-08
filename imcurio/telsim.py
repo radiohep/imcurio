@@ -25,7 +25,7 @@ class TelSim:
         self.u_m = np.array(u_m) ## u in meters
         self.v_m = np.array(v_m)
 
-    def get_visibilities (self, sb, pad = None, uv_m = None, verbose = False):
+    def get_visibilities (self, sb, pad = 2, uv_m = None, verbose = False):
         sigbeam = 0.5 * sb.lams / self.Ddish 
         print ("Beam sigma: %3.2f-%3.2f deg from z=%3.2f-%3.2f"%(sigbeam[0]/np.pi*180,
                                              sigbeam[-1]/np.pi*180., sb.zs[0],sb.zs[-1]))
@@ -40,8 +40,8 @@ class TelSim:
             v_m = self.v_m
         else:
             u_m = np.atleast_1d(uv_m[0])
-            v_m = np.atleast_1d(uv_m[1])
-            
+            v_m = np.atleast_1d(uv_m[1]) 
+           
         for i,(lam, dpix,  beam) in enumerate(zip(sb.lams,sb.Dpix_rad,sigbeam)):
             box = sb.box[:,:,i]
             if pad is not None:
