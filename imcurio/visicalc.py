@@ -61,8 +61,8 @@ class VisiCalc:
         """
         
         ## Let's deal with conjugation first
-        u = np.atleast_1d(u)
-        v = np.atleast_1d(v)
+        u = np.copy(np.atleast_1d(u))
+        v = np.copy(np.atleast_1d(v))
         if (u.max()>self.fmax-self.df*2) or (v.max()>self.fmax-self.df*2):
             print ("Requested UV too high.")
             print ("umax vmax = %f %f "%(u.max(), v.max()))
@@ -115,9 +115,9 @@ class VisiCalc:
                     ## now we need to pick out where we transit the complex plain
                     jndx = (jl + jj) 
                     data = self.fftmap[xndx, abs(jndx)]
-                    w = np.where(jndx<0)
-                    data [w] = np.conj(data[w])
-                    #print (kernx*kerny)
+                    ### If would naivetly think I need this, huhm.
+                    #w = np.where(jndx<0)
+                    #data [w] = np.conj(data[w])
                     res += kernx * kerny * data
                     sumk += kernx * kerny
             res /= sumk
