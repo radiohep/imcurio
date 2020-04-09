@@ -28,6 +28,7 @@ class SimBox:
             Omega_m = head['OMEGAM']
             Omega_b = head['OMEGAB']
             Hubble = head['HUBBLE']
+            self.h = Hubble/100.0
             sigma8 = head['SIGMA8']
             ns = head['ENN_S']
             # Make a neutrinoless cosmology
@@ -44,27 +45,27 @@ class SimBox:
             self.L_rad = o.L_rad
             self.central_freq = o.central_freq
             self.central_lam = o.central_lam
-            self.mtoIMpc = o.mtoIMpc
+            self.mtoIMpch = o.mtoIMpch
 
     def calculate_conversions(self):
         # self.rMpc = (ccl.comoving_radial_distance(self.C,1/(1+self.z))+
         #             self.Dpix*(np.arange(self.Nz)-self.Nz//2))
-        self.rMpc = (self.C.comoving_distance(self.z).value +
+        self.rMpch = (self.C.comoving_distance(self.z).value*self.h +
                      self.Dpix * (np.arange(self.Nz) - self.Nz // 2))
 
         # Let's calculate everything exactly
-        zar = np.linspace(self.z - 0.5, self.z + 0.5)
-        dar = self.C.comoving_distance(zar).value  # inMpc
+        zar = np.linspace(self.z - 0.5, self.z + 0.5, 200)
+        dar = self.C.comoving_distance(zar).value*self.h  # inMpc/h
         # ccl.comoving_radial_distance(self.C,1/(1+zar))
         self.central_freq = 1420.405 / (1 + self.z)
         self.central_lam = 299.8 / self.central_freq
         # meters to inverse Mpc
-        self.mtoIMpc = 1.0 / self.central_lam * \
-            (2 * np.pi / self.C.comoving_distance(self.z).value)
-        self.zs = interp1d(dar, zar)(self.rMpc)
+        self.mtoIMpch = 1.0 / self.central_lam * \
+            (2 * np.pi / self.C.comoving_distance(self.z).value)*self.h
+        self.zs = interp1d(dar, zar)(self.rMpch)
         self.freq = 1420.405 / (1 + self.zs)  # in MHz
         self.lams = 299.8 / self.freq
-        self.Dpix_rad = self.Dpix / self.rMpc
+        self.Dpix_rad = self.Dpix / self.rMpch
         self.L_rad = (self.Dpix_rad * self.Nx)
         print("Box size: %3.2f-%3.2f deg from z=%3.2f-%3.2f" %
               (self.L_rad[0] / np.pi * 180.0, self.L_rad[-1] / np.pi * 180.0, self.zs[0], self.zs[-1]))
