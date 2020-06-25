@@ -107,40 +107,55 @@ class VisiCalc:
                    (1 - uw) * vw * self.fftmap[il, jh] +
                    uw * vw * self.fftmap[ih, jh])
         elif interpolation == 'lasz':
-            la = 2
+           la = 2                   # window length
             if 'a' in opts:
                 la = opts['a']
+            rate = 0.3
             # let's do Lanzos 2D interpolation, we need two points at each end
-            res = np.zeros(len(u), np.complex)
-            sumk = np.zeros(len(u), np.complex)
-            uw = (u - self.fx[il]) / self.df
-            vw = (v - self.fy[jl]) / self.df
+                  # ?
+         #   sumk = np.zeros(len(u), np.complex)       # ?
+        #    uw = (u - self.fx[il]) / self.df         #1d array      
+        #    vw = (v - self.fy[jl]) / self.df         #1d array
 
-            lowi,highi = 0-int(la)+1, 0+int(la)+1
 
-            def kernf(x,a):
-                toret = np.sin(np.pi * x) * np.sin(np.pi * x / a)
-                toret [x!=0] /= (np.pi**2 * x[x!=0]**2)
-                toret [x==0] = 1.0
-                return toret
             
-            for ii in np.arange(lowi,highi):
-                xi = ii - uw
-                kernx = kernf(xi,la)
-                xndx = (il + ii) % self.N
-                for jj in np.arange(lowi, highi):
-                    xj = jj - vw
-                    kerny = kernf(xj,la)
-                    # now we need to pick out where we transit the complex
-                    # plain
-                    jndx = (jl + jj)
-                    data = self.fftmap[xndx, abs(jndx)]
-                    # If would naivetly think I need this, huhm.
-                    #w = np.where(jndx<0)
-                    #data [w] = np.conj(data[w])
-                    res += kernx * kerny * data
-                    sumk += kernx * kerny
-            res /= sumk
+            u_n = int(float(len(u) - la)/rate)   #size for x axis
+            v_n = int(float(len(u) - la)/rate)
+            
+            u_l, v_l = [], []   #coordinate in data indice space for interpolation result
+            
+            res = np.zeros(u_n, np.complex)  
+            
+            def L_Kern(x,a):
+                if x == 0.0:
+                    L = 1.0
+                elif x != 0.0 and x < a and x >= -a:
+                    L = (a*np.sin(np.pi*x)*np.sin(np.pi*x /a))/(np.pi**2*x**2)
+                else:
+                    L = 0.0
+                 
+                return L
+                                #We want u[i]  << df so we have more points in between fx[i] and fx[i+1]
+            
+
+            for ii in range(u_n):      
+               # for jj in range(v_n):
+                u_o = rate * float(ii)
+                low_bound_u = int(u_o) - la + 1
+                high_bound_u = int(u_o) + la + 1 #+1 on high_bound since loop excludes end.
+                u_l.append(u_o)
+                    
+                v_o = rate * float(ii)
+                low_bound_v = int(v_o) - la + 1
+                high_bound_v = int(v_o) + la + 1
+                v_l.append(v_o)
+                for n in range(low_bound_u, high_bound_u):
+                    for m in range(low_bound_v, high_bound_v):
+                        L_x = L_Kern(u_o - float(n), la)
+                        L_y = L_Kern(v_o - float(m), la)
+                        data = self.fftmap[n][m]
+                        res[ii]  += L_x * L_y * data
+                        
         else:
             print ("Bad interpolation")
             raise NotImplemented 
