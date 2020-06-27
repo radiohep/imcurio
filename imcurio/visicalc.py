@@ -107,7 +107,7 @@ class VisiCalc:
                    (1 - uw) * vw * self.fftmap[il, jh] +
                    uw * vw * self.fftmap[ih, jh])
         elif interpolation == 'lasz':
-               la = 4                   # window length
+            la = 4                   # window length
             if 'a' in opts:
                 la = opts['a']
                 
