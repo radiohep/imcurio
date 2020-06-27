@@ -107,24 +107,21 @@ class VisiCalc:
                    (1 - uw) * vw * self.fftmap[il, jh] +
                    uw * vw * self.fftmap[ih, jh])
         elif interpolation == 'lasz':
-           la = 2                   # window length
+               la = 4                   # window length
             if 'a' in opts:
                 la = opts['a']
-            rate = 0.3
+                
             # let's do Lanzos 2D interpolation, we need two points at each end
-                  # ?
-         #   sumk = np.zeros(len(u), np.complex)       # ?
-        #    uw = (u - self.fx[il]) / self.df         #1d array      
-        #    vw = (v - self.fy[jl]) / self.df         #1d array
-
-
             
-            u_n = int(float(len(u) - la)/rate)   #size for x axis
-            v_n = int(float(len(u) - la)/rate)
+            #Resize the u,v by df:
+            u_s = u/self.df
+            v_s = v/self.df
             
-            u_l, v_l = [], []   #coordinate in data indice space for interpolation result
+            #convert fx and fy into indice space:
+            fx_s = (self.fx/self.df).astype(int)
+            fy_s = (self.fy/self.df).astype(int)
             
-            res = np.zeros(u_n, np.complex)  
+           
             
             def L_Kern(x,a):
                 if x == 0.0:
@@ -135,25 +132,24 @@ class VisiCalc:
                     L = 0.0
                  
                 return L
-                                #We want u[i]  << df so we have more points in between fx[i] and fx[i+1]
             
-
-            for ii in range(u_n):      
-               # for jj in range(v_n):
-                u_o = rate * float(ii)
-                low_bound_u = int(u_o) - la + 1
-                high_bound_u = int(u_o) + la + 1 #+1 on high_bound since loop excludes end.
-                u_l.append(u_o)
-                    
-                v_o = rate * float(ii)
-                low_bound_v = int(v_o) - la + 1
-                high_bound_v = int(v_o) + la + 1
-                v_l.append(v_o)
-                for n in range(low_bound_u, high_bound_u):
-                    for m in range(low_bound_v, high_bound_v):
-                        L_x = L_Kern(u_o - float(n), la)
-                        L_y = L_Kern(v_o - float(m), la)
-                        data = self.fftmap[n][m]
+           
+            
+            res = np.zeros(len(u),np.complex)  
+            
+            for ii in range(len(u_s)):      
+                low_bound_u = int(u_s[ii]) - la + 1
+                high_bound_u = int(u_s[ii]) + la + 1        #+1 on high_bound since loop excludes end.
+               
+                low_bound_v = int(v_s[ii]) - la + 1
+                high_bound_v = int(v_s[ii]) + la + 1
+        
+            
+                for fx_s in range(low_bound_u, high_bound_u):
+                    for fy_s in range(low_bound_v, high_bound_v):
+                        L_x = L_Kern(u_s[ii] - float(fx_s), la)
+                        L_y = L_Kern(v_s[ii] - float(fy_s), la)
+                        data = self.fftmap[fx_s][fy_s]
                         res[ii]  += L_x * L_y * data
                         
         else:
