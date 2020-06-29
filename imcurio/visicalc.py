@@ -137,6 +137,13 @@ class VisiCalc:
             
             res = np.zeros(len(u),np.complex)  
             
+            ### AS: no, no, don't write loops likes this.
+            ### instead, say something like
+            ### low_bound_u = u_s - la + 1
+            ### high_bound_u = u_s + la + 1
+            ### etc.
+            ### Also, you need to make sure boundary conditions are respected!!
+            
             for ii in range(len(u_s)):      
                 low_bound_u = int(u_s[ii]) - la + 1
                 high_bound_u = int(u_s[ii]) + la + 1        #+1 on high_bound since loop excludes end.
