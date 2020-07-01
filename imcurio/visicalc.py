@@ -144,7 +144,7 @@ class VisiCalc:
             high_bound_v = (np.floor(v_s) + la + 1).astype(int)
             
             
-           #I can't get away using another for loop here, are there ways to access each value inside the array without using another for loop here ?
+           #I can't get away using another for loop here, are there ways to access each value inside the array without using another for loop here?
         
             for kk in np.arange(len(u_s)):  
                 for fx_s in np.arange(low_bound_u[kk], high_bound_u[kk]):
