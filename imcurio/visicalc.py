@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.fft import rfft2, irfft2, fftfreq, rfftfreq
-
+import math
 
 def rfft2_real_coords(N, dx):
     """
@@ -118,8 +118,8 @@ class VisiCalc:
             v_s = v/self.df
             
             #convert fx and fy into indice space:
-            fx_s = (self.fx/self.df).astype(int)
-            fy_s = (self.fy/self.df).astype(int)
+            #fx_s = (self.fx/self.df).astype(int)  Unneeded.
+            #fy_s = (self.fy/self.df).astype(int)
             
            
             
@@ -137,20 +137,29 @@ class VisiCalc:
             
             res = np.zeros(len(u),np.complex)  
             
-            for ii in range(len(u_s)):      
-                low_bound_u = int(u_s[ii]) - la + 1
-                high_bound_u = int(u_s[ii]) + la + 1        #+1 on high_bound since loop excludes end.
-               
-                low_bound_v = int(v_s[ii]) - la + 1
-                high_bound_v = int(v_s[ii]) + la + 1
-        
+            low_bound_u = (np.floor(u_s) - la + 1).astype(int)
+            high_bound_u = (np.floor(u_s) + la + 1).astype(int)       #+1 on high_bound since loop excludes end.
+                                  
+            low_bound_v = (np.floor(v_s) - la + 1).astype(int)
+            high_bound_v = (np.floor(v_s) + la + 1).astype(int)
             
-                for fx_s in range(low_bound_u, high_bound_u):
-                    for fy_s in range(low_bound_v, high_bound_v):
-                        L_x = L_Kern(u_s[ii] - float(fx_s), la)
-                        L_y = L_Kern(v_s[ii] - float(fy_s), la)
-                        data = self.fftmap[fx_s][fy_s]
-                        res[ii]  += L_x * L_y * data
+            
+           #I can't get away using another for loop here, are there ways to access each value inside the array without using another for loop here?
+        
+            for kk in np.arange(len(u_s)):  
+                for fx_s in np.arange(low_bound_u[kk], high_bound_u[kk]):
+                    for fy_s in np.arange(low_bound_v[kk], high_bound_v[kk]):
+                        L_x = L_Kern(u_s[kk] - float(fx_s), la)
+                        L_y = L_Kern(v_s[kk] - float(fy_s), la)
+                        ii = int(math.fmod(fx_s,self.N))           #indices for data
+                        jj = int(math.fmod(fy_s,self.N))
+                        
+                        if fy_s < 0:
+                            data = np.conj(self.fftmap[-1*ii][-1*jj])
+                        else:
+                            data = self.fftmap[ii][jj]
+                        
+                        res[kk]  += L_x * L_y * data
                         
         else:
             print ("Bad interpolation")
