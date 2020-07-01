@@ -143,6 +143,10 @@ class VisiCalc:
             low_bound_v = (np.floor(v_s) - la + 1).astype(int)
             high_bound_v = (np.floor(v_s) + la + 1).astype(int)
             
+            ### AS: no, no, don't write loops likes this.
+            ### Also, you need to make sure boundary conditions are respected!!
+            
+           
             
            #I can't get away using another for loop here, are there ways to access each value inside the array without using another for loop here?
         
