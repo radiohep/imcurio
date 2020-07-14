@@ -43,7 +43,7 @@ class SimplestGaussBeam:
 
 class VisiCalc:
 
-    def __init__(self, realmap, dx, beam):
+    def __init__(self, realmap, dx, beam, rad_x_y = None):
         """ Realmap is in K (assuming you want to add sources later) """
 
         Nx, Ny = realmap.shape
@@ -53,12 +53,21 @@ class VisiCalc:
         beam = beam.render(self.N, dx)
         self.beam = beam / beam.sum()  # normalize
         self.beamA = beam.sum() * dx**2  # Beam area in steradian
-        self.fftmap = rfft2(realmap * self.beam)
         self.fx = fftfreq(self.N, dx)  # frequencies in the x direction
         self.fy = rfftfreq(self.N, dx)  # frequencies in the y direction
         self.df = self.fy[1] - self.fy[0]
         self.fmax = self.fy.max()
-
+        
+        if rad_x_y is None:
+            self.fftmap = rfft2(realmap * self.beam**2)   #changed to beam squared.
+        else:
+            self.fftmap = np.zeros((self.N,self.N), np.complex)  
+            fy = np.tile(self.fx, (self.N,1))
+            fx = np.tile(np.reshape(self.fx,(self.N,1)),(1, self.N))
+            self.fftmap = realmap * (self.beam**2) * np.exp(-2.*np.pi*1j*(np.sin(rad_x_y[0])*fx + np.sin(rad_x_y[1])*fy)) 
+           # self.fftmap = realmap[24,56] * self.beam[24,56] * np.exp(-2.*np.pi*1j*(24.*fx + 56.*fy)) 
+           # self.fftmap = np.delete(self.fftmap,np.s_[self.fy.size:],1)
+            
     def visibility(self, u,v, interpolation = 'lasz', opts={}):
         """ u, v are in L/lambda and can be arrays
            returns complex viibility in the K units

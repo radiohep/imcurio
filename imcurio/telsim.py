@@ -97,14 +97,17 @@ class TelSim:
         if deg_x_y is not None:
             offset_x_rad = deg_x_y[0] / 180 * np.pi 
             offset_y_rad = deg_x_y[1] / 180 * np.pi 
-            offset_xi = np.rint(offset_x_rad/sb.Dpix_rad).astype(int) 
-            offset_yi = np.rint(offset_y_rad/sb.Dpix_rad).astype(int)
-            temp = np.zeros((sb.Nx,sb.Nx,sb.Nx))
-            temp[offset_xi,offset_yi,np.arange(sb.Nz)] = sb.box[offset_xi,offset_yi,np.arange(sb.Nz)]
-            sb.box = temp
+            #offset_xi = np.rint(offset_x_rad/sb.Dpix_rad).astype(int) 
+            #offset_yi = np.rint(offset_y_rad/sb.Dpix_rad).astype(int)
+            #temp = np.zeros((sb.Nx,sb.Nx,sb.Nx))
+            #temp[offset_xi,offset_yi,np.arange(sb.Nz)] = sb.box[offset_xi,offset_yi,np.arange(sb.Nz)]
+            #sb.box = temp
+            
+            #sb.box *= 0.0
+            #sb.box[offset_xi,offset_yi,np.arange(sb.Nz)]=1.
         for i, (lam, dpix, beam) in enumerate(
                 zip(sb.lams, sb.Dpix_rad, sigbeam)):
-            box = sb.box[:, :, i]
+            box = sb.box[:, :, i]    
             if pad is not None:
                 cbox = np.zeros((pad * N, pad * N))
                 # we need to copy over while keeping the origin
@@ -115,9 +118,15 @@ class TelSim:
                 cbox[-Nh:, -Nh:] = box[-Nh:, -Nh:]
             else:
                 cbox = box
-            V = vc.VisiCalc(cbox, dpix, vc.SimplestGaussBeam(beam))
+            
+            if deg_x_y is not None:
+                V = vc.VisiCalc(cbox, dpix, vc.SimplestGaussBeam(beam), rad_x_y = (offset_x_rad, offset_y_rad))
+            else:
+                V = vc.VisiCalc(cbox, dpix, vc.SimplestGaussBeam(beam))
+            
             R = V.visibility(u_m / lam, v_m / lam,
                 interpolation = vopts['interpolation'], opts=vopts)
+            
             if verbose > 1:
                 if i == 0 or i == sb.Nz - 1:
                     print(
