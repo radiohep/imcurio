@@ -64,9 +64,17 @@ class VisiCalc:
             self.fftmap = np.zeros((self.N,self.N), np.complex)  
             fy = np.tile(self.fx, (self.N,1))
             fx = np.tile(np.reshape(self.fx,(self.N,1)),(1, self.N))
-            self.fftmap = realmap * (self.beam**2) * np.exp(-2.*np.pi*1j*(np.sin(rad_x_y[0])*fx + np.sin(rad_x_y[1])*fy)) 
-           # self.fftmap = realmap[24,56] * self.beam[24,56] * np.exp(-2.*np.pi*1j*(24.*fx + 56.*fy)) 
-           # self.fftmap = np.delete(self.fftmap,np.s_[self.fy.size:],1)
+            l = np.sin(rad_x_y[0])
+            m = np.sin(rad_x_y[1])
+            l_i = np.rint(l/self.dx).astype(int)         #I'm thinking this would generate the index for corresponding offset angle
+            m_i = np.rint(m/self.dx).astype(int)
+        
+            # if set to 1 like notebook, produces exactly like the notebook file
+            realmap[l_i,m_i] = 1   
+            # by using l_i,m_i on beam, it gives same value as notebook.
+            self.fftmap = realmap[l_i,m_i] * (self.beam[l_i,m_i]**2) * np.exp(-2.*np.pi*1j*(l*fx + m*fy)) 
+           
+        # self.fftmap = np.delete(self.fftmap,np.s_[self.fy.size:],1)
             
     def visibility(self, u,v, interpolation = 'lasz', opts={}):
         """ u, v are in L/lambda and can be arrays
