@@ -53,13 +53,15 @@ class TelSim:
         self.u_m = np.array(u_m)  # u in meters
         self.v_m = np.array(v_m)
 
-    def get_visibilities(self, sb, pad=2, uv_m=None, vopts={}, verbose=1, deg_x_y =None):
+    def get_visibilities(self, sb, source_cat, pad=2, uv_m=None, vopts={}, verbose=1):
         """ Gets visibilities given a simulation box
 
         Parameters
         ----------
         sb : SimBox
             Simulation box from which to calculate visibilities
+        source_cat : SourceCatalog or None
+            Catalog of point sources to use. Use None to not add any sources.
         pad : float, optional
             How much to pad the 2D planes before FFTing. 2 is desirable to
             avoid wraparound issue (note that we broke translation symmetry by beam)
@@ -69,8 +71,6 @@ class TelSim:
         vopts: dic, optional
            Options to pass to the VisiCalc visibility() function
         verbose: int, optional
-            deg_x_y, tuple,(x,y) in degree.
-           Babble, babble...
         """
         sigbeam = 0.5 * sb.lams / self.Ddish
         if verbose:
@@ -94,17 +94,6 @@ class TelSim:
         if 'interpolation' not in vopts:
             vopts['interpolation']='lasz'
         
-        if deg_x_y is not None:
-            offset_x_rad = deg_x_y[0] / 180 * np.pi 
-            offset_y_rad = deg_x_y[1] / 180 * np.pi 
-            #offset_xi = np.rint(offset_x_rad/sb.Dpix_rad).astype(int) 
-            #offset_yi = np.rint(offset_y_rad/sb.Dpix_rad).astype(int)
-            #temp = np.zeros((sb.Nx,sb.Nx,sb.Nx))
-            #temp[offset_xi,offset_yi,np.arange(sb.Nz)] = sb.box[offset_xi,offset_yi,np.arange(sb.Nz)]
-            #sb.box = temp
-            
-            #sb.box *= 0.0
-            #sb.box[offset_xi,offset_yi,np.arange(sb.Nz)]=1.
         for i, (lam, dpix, beam) in enumerate(
                 zip(sb.lams, sb.Dpix_rad, sigbeam)):
             box = sb.box[:, :, i]    
@@ -119,10 +108,7 @@ class TelSim:
             else:
                 cbox = box
             
-            if deg_x_y is not None:
-                V = vc.VisiCalc(cbox, dpix, vc.SimplestGaussBeam(beam), rad_x_y = (offset_x_rad, offset_y_rad))
-            else:
-                V = vc.VisiCalc(cbox, dpix, vc.SimplestGaussBeam(beam))
+            V = vc.VisiCalc(cbox, source_cat, dpix, vc.SimplestGaussBeam(beam))
             
             R = V.visibility(u_m / lam, v_m / lam,
                 interpolation = vopts['interpolation'], opts=vopts)
