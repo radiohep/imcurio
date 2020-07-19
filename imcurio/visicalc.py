@@ -56,7 +56,8 @@ class VisiCalc:
         self.dx = dx
         self.beamfunc = beamfunc
         beam = beamfunc.render(self.N, dx)
-        self.beam = beam / beam.sum()  # normalize
+        self.beam = beam/ beam.sum()   # normalize
+        self.beamS = beam.sum()
         self.beamA = beam.sum() * dx**2  # Beam area in steradian
         self.fx = fftfreq(self.N, dx)  # frequencies in the x direction
         self.fy = rfftfreq(self.N, dx)  # frequencies in the y direction
@@ -114,33 +115,17 @@ class VisiCalc:
                    (1 - uw) * vw * self.fftmap[il, jh] +
                    uw * vw * self.fftmap[ih, jh])
         elif interpolation == 'lasz':
-            la = 4                   # window length
+            la = 5                   # window length
             if 'a' in opts:
                 la = opts['a']
-
-            # let's do Lanzos 2D interpolation, we need two points at each end
-
+                
             #Resize the u,v by df:
             u_s = u/self.df
             v_s = v/self.df
 
             #convert fx and fy into indice space:
             #fx_s = (self.fx/self.df).astype(int)  Unneeded.
-            #fy_s = (self.fy/self.df).astype(int)
-
-
-
-            def L_Kern(x,a):
-                if x == 0.0:
-                    L = 1.0
-                elif x != 0.0 and x < a and x >= -a:
-                    L = (a*np.sin(np.pi*x)*np.sin(np.pi*x /a))/(np.pi**2*x**2)
-                else:
-                    L = 0.0
-
-                return L
-
-
+            #fy_s = (self.fy/self.df).astype(int)               
 
             res = np.zeros(len(u),np.complex)  
 
@@ -150,13 +135,16 @@ class VisiCalc:
             low_bound_v = (np.floor(v_s) - la + 1).astype(int)
             high_bound_v = (np.floor(v_s) + la + 1).astype(int)
 
-            ### AS: no, no, don't write loops likes this.
-            ### Also, you need to make sure boundary conditions are respected!!
-
-
-
-           #I can't get away using another for loop here, are there ways to access each value inside the array without using another for loop here?
-
+            """
+            def L_Kern(x,a):
+                if x == 0.0:
+                    L = 1.0
+                elif x != 0.0 and x < a and x >= -a:
+                    L = (a*np.sin(np.pi*x)*np.sin(np.pi*x /a))/(np.pi**2*x**2)
+                else:
+                    L = 0.0
+                return L   
+            
             for kk in np.arange(len(u_s)):  
                 for fx_s in np.arange(low_bound_u[kk], high_bound_u[kk]):
                     for fy_s in np.arange(low_bound_v[kk], high_bound_v[kk]):
@@ -171,6 +159,56 @@ class VisiCalc:
                             data = self.fftmap[ii][jj]
 
                         res[kk]  += L_x * L_y * data
+                        """
+         
+         # Attempts to vectorize the for loop above:
+            
+            def L_Kern(x,a):
+                cond_1 = np.where(x == 0.0)
+                cond_2 = np.where((x !=0.0) & (x < a) & (x >= -a))
+                cond_3 = np.where((x >= a) | (x < -a))
+                
+                L = np.zeros((x.shape))
+                L[cond_1] = 1.0
+                L[cond_2] = (a*np.sin(np.pi*x[cond_2])*np.sin(np.pi*x[cond_2] /a))/(np.pi**2*x[cond_2]**2)
+                L[cond_3] = 0.0
+                
+                return L
+            
+            
+            N = 2*la
+            fx_s = np.arange(low_bound_u[0],high_bound_u[0])
+            fy_s = np.arange(low_bound_v[0],high_bound_v[0])
+           
+            for kk in range(1,len(u_s)):
+                fx_s = np.vstack((fx_s, np.arange(low_bound_u[kk],high_bound_u[kk])))
+                fy_s = np.vstack((fy_s, np.arange(low_bound_v[kk],high_bound_v[kk])))
+            
+            if len(u_s) != 1 :
+                fx_s = np.repeat(fx_s, N, axis =1)
+                fy_s = np.tile(fy_s, (1, N))
+            
+            else:
+                fx_s = np.repeat(fx_s, N, axis =0)
+                fy_s = np.tile(fy_s, N)                     
+                                     
+            ii = np.rint(np.fmod(fx_s, self.N)).astype(int)    
+            jj = np.rint(np.fmod(fy_s, self.N)).astype(int)    
+            
+            cond = np.where(jj < 0)
+            ii[cond] *= -1
+            jj[cond] *= -1
+      
+            u_s = np.tile(u_s, (N**2,1)).T    #2d
+            v_s = np.tile(v_s, (N**2,1)).T
+                         
+            L_x = L_Kern(u_s - fx_s , la)
+            L_y = L_Kern(v_s - fy_s , la)
+            
+          
+            data = self.fftmap[ii,jj]
+            data[cond] = np.conj(data[cond])      
+            res = np.sum(L_x * L_y * data , axis = 1) 
 
         else:
             print ("Bad interpolation")
@@ -183,10 +221,10 @@ class VisiCalc:
             for theta,phi,flux in self.source_cat.theta_phi_flux:
                 x = theta*np.cos(phi)
                 y = theta*np.sin(phi)
-                beam_sup = self.beamfunc(x,y)
+                beam_sup = self.beamfunc(x,y) / self.beamS
                 ## these are now in radian
                 ## above it says that u,v and in L/lambda,so we have
-                res += np.exp(1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2
+                res += np.exp(-1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2
                 
 
 
