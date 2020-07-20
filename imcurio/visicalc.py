@@ -56,8 +56,7 @@ class VisiCalc:
         self.dx = dx
         self.beamfunc = beamfunc
         beam = beamfunc.render(self.N, dx)
-        self.beam = beam/ beam.sum()   # normalize
-        self.beamS = beam.sum()
+        self.beam = beam 
         self.beamA = beam.sum() * dx**2  # Beam area in steradian
         self.fx = fftfreq(self.N, dx)  # frequencies in the x direction
         self.fy = rfftfreq(self.N, dx)  # frequencies in the y direction
@@ -221,7 +220,7 @@ class VisiCalc:
             for theta,phi,flux in self.source_cat.theta_phi_flux:
                 x = theta*np.cos(phi)
                 y = theta*np.sin(phi)
-                beam_sup = self.beamfunc(x,y) / self.beamS
+                beam_sup = self.beamfunc(x,y) 
                 ## these are now in radian
                 ## above it says that u,v and in L/lambda,so we have
                 res += np.exp(-1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2
