@@ -218,8 +218,10 @@ class VisiCalc:
         if self.source_cat is not None:
             ## implement source catalog
             for theta,phi,flux in self.source_cat.theta_phi_flux:
-                x = theta*np.cos(phi)
-                y = theta*np.sin(phi)
+                x = np.sin(theta)*np.cos(phi)
+                y = np.sin(theta)*np.sin(phi)
+                ## full path difference is should be u*x + v*y + w*z, but w =0
+                #z = np.cos(theta)
                 beam_sup = self.beamfunc(x,y) 
                 ## these are now in radian
                 ## above it says that u,v and in L/lambda,so we have
