@@ -108,7 +108,7 @@ class TelSim:
             else:
                 cbox = box
             
-            V = vc.VisiCalc(cbox, source_cat, dpix, vc.SimplestGaussBeam(beam))
+            V = vc.VisiCalc(cbox, source_cat, dpix, vc.SimplestGaussBeam(beam), lam)
             
             R = V.visibility(u_m / lam, v_m / lam,
                 interpolation = vopts['interpolation'], opts=vopts)

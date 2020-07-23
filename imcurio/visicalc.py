@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.fft import rfft2, irfft2, fftfreq, rfftfreq
 import math
+import scipy.constants
 
 def rfft2_real_coords(N, dx):
     """
@@ -46,12 +47,13 @@ class SimplestGaussBeam:
 
 class VisiCalc:
 
-    def __init__(self, realmap, source_cat, dx, beamfunc):
+    def __init__(self, realmap, source_cat, dx, beamfunc, lam):
         """ Realmap is in K (assuming you want to add sources later) """
 
 
         Nx, Ny = realmap.shape
         assert(Nx == Ny)
+        self.lam = lam
         self.N = Nx
         self.dx = dx
         self.beamfunc = beamfunc
@@ -217,18 +219,33 @@ class VisiCalc:
             
         if self.source_cat is not None:
             ## implement source catalog
-            for theta,phi,flux in self.source_cat.theta_phi_flux:
-                x = np.sin(theta)*np.cos(phi)
-                y = np.sin(theta)*np.sin(phi)
+            # Convert from Jy to K:
+            if self.source_cat.theta_phi_flux.shape[0] == 1:
+                for theta,phi,flux in self.source_cat.theta_phi_flux:
+                    fluxT = ((self.lam**2)*flux)/(2.*scipy.constants.k*self.beamA)
+                    x = np.sin(theta)*np.cos(phi)
+                    y = np.sin(theta)*np.sin(phi)
                 ## full path difference is should be u*x + v*y + w*z, but w =0
                 #z = np.cos(theta)
-                beam_sup = self.beamfunc(x,y) 
+                
+                    beam_sup = self.beamfunc(x,y) 
                 ## these are now in radian
                 ## above it says that u,v and in L/lambda,so we have
-                res += np.exp(-1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2
+                    res += fluxT * np.exp(-1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2
+            else:
+                theta_phi_flux = self.source_cat.theta_phi_flux #theta_phi_flux in rad and JY
+                shape1 = (len(u),1)
+                shape2 = (theta_phi_flux.shape[0],1)
+                fluxT = np.tile(((self.lam**2)*theta_phi_flux[:,2])/(2.*scipy.constants.k*self.beamA), shape1) #change to K from JY
+                x = np.tile(np.sin(theta_phi_flux[:,0])*np.cos(theta_phi_flux[:,1]), shape1)
+                y = np.tile(np.sin(theta_phi_flux[:,0])*np.sin(theta_phi_flux[:,1]), shape1)
+                beam_sup = self.beamfunc(x,y)
                 
-
-
+                u_2 = np.tile(u, shape2).T
+                v_2 = np.tile(v, shape2).T
+                
+                res += np.sum(fluxT * np.exp(-1j*2.0*np.pi*(u_2*x+v_2*y)) * beam_sup**2, axis = 1)
+                
         if 'return_indices' in opts:
             if opts['return_indices']:
                 return res, il, jl
