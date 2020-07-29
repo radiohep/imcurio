@@ -219,10 +219,10 @@ class VisiCalc:
             
         if self.source_cat is not None:
             ## implement source catalog
-            # Convert from Jy to K:
+            # Need 4~5 hours to load all the data, with 0 background flux.
             if self.source_cat.theta_phi_flux.shape[0] == 1:
                 for theta,phi,flux in self.source_cat.theta_phi_flux:
-                    fluxT = ((self.lam**2)*flux)/(2.*scipy.constants.k*self.beamA)
+                    fluxT = ((self.lam**2)*flux*10**(-26))/(2.*scipy.constants.k*self.beamA)
                     x = np.sin(theta)*np.cos(phi)
                     y = np.sin(theta)*np.sin(phi)
                 ## full path difference is should be u*x + v*y + w*z, but w =0
@@ -236,7 +236,9 @@ class VisiCalc:
                 theta_phi_flux = self.source_cat.theta_phi_flux #theta_phi_flux in rad and JY
                 shape1 = (len(u),1)
                 shape2 = (theta_phi_flux.shape[0],1)
-                fluxT = np.tile(((self.lam**2)*theta_phi_flux[:,2])/(2.*scipy.constants.k*self.beamA), shape1) #change to K from JY
+                
+                #change to K from JY
+                fluxT = np.tile(((self.lam**2)*theta_phi_flux[:,2]*10**(-26))/(2.*scipy.constants.k*self.beamA), shape1) 
                 x = np.tile(np.sin(theta_phi_flux[:,0])*np.cos(theta_phi_flux[:,1]), shape1)
                 y = np.tile(np.sin(theta_phi_flux[:,0])*np.sin(theta_phi_flux[:,1]), shape1)
                 beam_sup = self.beamfunc(x,y)
