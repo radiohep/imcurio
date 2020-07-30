@@ -57,14 +57,16 @@ class VisiCalc:
         self.N = Nx
         self.dx = dx
         self.beamfunc = beamfunc
+        ## for discussion of beam normalization, etc.
+        ## See https://www.overleaf.com/read/gxxkztfnbxwq
         beam = beamfunc.render(self.N, dx)
-        self.beam = beam 
-        self.beamA = beam.sum() * dx**2  # Beam area in steradian
+        beamnorm = (beam**2).sum()
+        self.beamA = (beam**2).sum() * dx**2  # Beam area in steradian
         self.fx = fftfreq(self.N, dx)  # frequencies in the x direction
         self.fy = rfftfreq(self.N, dx)  # frequencies in the y direction
         self.df = self.fy[1] - self.fy[0]
         self.fmax = self.fy.max()
-        self.fftmap = rfft2(realmap * self.beam**2)   #changed to beam squared.
+        self.fftmap = rfft2(realmap * beam**2)/beamnorm   #changed to beam squared.
         self.source_cat = source_cat
             
     def visibility(self, u,v, interpolation = 'lasz', opts={}):
@@ -222,7 +224,7 @@ class VisiCalc:
             # Need 4~5 hours to load all the data, with 0 background flux.
             if self.source_cat.theta_phi_flux.shape[0] == 1:
                 for theta,phi,flux in self.source_cat.theta_phi_flux:
-                    fluxT = ((self.lam**2)*flux*10**(-26))/(2.*scipy.constants.k*self.beamA)
+                    fluxT = ((self.lam**2)*flux*1e-26)/(2.*scipy.constants.k*self.beamA)
                     x = np.sin(theta)*np.cos(phi)
                     y = np.sin(theta)*np.sin(phi)
                 ## full path difference is should be u*x + v*y + w*z, but w =0
@@ -238,7 +240,7 @@ class VisiCalc:
                 shape2 = (theta_phi_flux.shape[0],1)
                 
                 #change to K from JY
-                fluxT = np.tile(((self.lam**2)*theta_phi_flux[:,2]*10**(-26))/(2.*scipy.constants.k*self.beamA), shape1) 
+                fluxT = np.tile(((self.lam**2)*theta_phi_flux[:,2]*1e-26)/(2.*scipy.constants.k*self.beamA), shape1) 
                 x = np.tile(np.sin(theta_phi_flux[:,0])*np.cos(theta_phi_flux[:,1]), shape1)
                 y = np.tile(np.sin(theta_phi_flux[:,0])*np.sin(theta_phi_flux[:,1]), shape1)
                 beam_sup = self.beamfunc(x,y)

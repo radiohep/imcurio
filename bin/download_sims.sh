@@ -9,5 +9,6 @@ curl -O http://mwhite.berkeley.edu/PUMAsim/Sky_0512_z100_060.0-30.0.fits
 curl -O http://mwhite.berkeley.edu/PUMAsim/Sky_0512_z100_135.0+0.00.fits
 curl -O http://mwhite.berkeley.edu/PUMAsim/Sky_0512_z200_060.0-30.0.fits
 curl -O http://mwhite.berkeley.edu/PUMAsim/Sky_0512_z200_135.0+0.00.fits
+curl -O http://mwhite.berkeley.edu/PUMAsim/GLEAM_EGC_v2_trim.fits
 
 
