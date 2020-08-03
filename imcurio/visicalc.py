@@ -60,13 +60,13 @@ class VisiCalc:
         ## for discussion of beam normalization, etc.
         ## See https://www.overleaf.com/read/gxxkztfnbxwq
         beam = beamfunc.render(self.N, dx)
-        beamnorm = (beam**2).sum()
+        self.beamnorm = (beam**2).sum()
         self.beamA = (beam**2).sum() * dx**2  # Beam area in steradian
         self.fx = fftfreq(self.N, dx)  # frequencies in the x direction
         self.fy = rfftfreq(self.N, dx)  # frequencies in the y direction
         self.df = self.fy[1] - self.fy[0]
         self.fmax = self.fy.max()
-        self.fftmap = rfft2(realmap * beam**2)/beamnorm   #changed to beam squared.
+        self.fftmap = rfft2(realmap * beam**2)/self.beamnorm   #changed to beam squared.
         self.source_cat = source_cat
             
     def visibility(self, u,v, interpolation = 'lasz', opts={}):
@@ -221,7 +221,6 @@ class VisiCalc:
             
         if self.source_cat is not None:
             ## implement source catalog
-            # Need 4~5 hours to load all the data, with 0 background flux.
             if self.source_cat.theta_phi_flux.shape[0] == 1:
                 for theta,phi,flux in self.source_cat.theta_phi_flux:
                     fluxT = ((self.lam**2)*flux*1e-26)/(2.*scipy.constants.k*self.beamA)
@@ -230,17 +229,22 @@ class VisiCalc:
                 ## full path difference is should be u*x + v*y + w*z, but w =0
                 #z = np.cos(theta)
                 
-                    beam_sup = self.beamfunc(x,y) 
+                    beam_sup = self.beamfunc(x,y)
+                    
                 ## these are now in radian
                 ## above it says that u,v and in L/lambda,so we have
-                    res += fluxT * np.exp(-1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2
+                    res += (fluxT*np.exp(-1j*2.0*np.pi*(u*x+v*y)) * beam_sup**2)/self.beamnorm
             else:
-                theta_phi_flux = self.source_cat.theta_phi_flux #theta_phi_flux in rad and JY
+                nu0 = 200.  #in MHz
+                
+                #theta_phi_flux in rad and JY
+                theta_phi_flux = self.source_cat.theta_phi_flux 
                 shape1 = (len(u),1)
                 shape2 = (theta_phi_flux.shape[0],1)
                 
                 #change to K from JY
-                fluxT = np.tile(((self.lam**2)*theta_phi_flux[:,2]*1e-26)/(2.*scipy.constants.k*self.beamA), shape1) 
+                flux = theta_phi_flux[:,2]*((299.8/self.lam/nu0)**self.source_cat.a_index[:,0])
+                fluxT = np.tile(((self.lam**2)*flux* 1e-26)/(2.*scipy.constants.k*self.beamA), shape1)
                 x = np.tile(np.sin(theta_phi_flux[:,0])*np.cos(theta_phi_flux[:,1]), shape1)
                 y = np.tile(np.sin(theta_phi_flux[:,0])*np.sin(theta_phi_flux[:,1]), shape1)
                 beam_sup = self.beamfunc(x,y)
@@ -248,7 +252,7 @@ class VisiCalc:
                 u_2 = np.tile(u, shape2).T
                 v_2 = np.tile(v, shape2).T
                 
-                res += np.sum(fluxT * np.exp(-1j*2.0*np.pi*(u_2*x+v_2*y)) * beam_sup**2, axis = 1)
+                res += (np.sum(fluxT * np.exp(-1j*2.0*np.pi*(u_2*x+v_2*y)) * beam_sup**2, axis = 1))/self.beamnorm
                 
         if 'return_indices' in opts:
             if opts['return_indices']:
