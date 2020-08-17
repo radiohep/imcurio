@@ -45,7 +45,7 @@ class TelSim:
 
         assert(self.kind == 'square')
         u_m, v_m = [], []
-        for i in range(-self.N + 1, self.N):
+        for i in range(-self.N, self.N):  #Used to be -N+1 to N, if -N to N, makes 512
             for j in range(0, self.N):
                 u_m.append(i)
                 v_m.append(j)
